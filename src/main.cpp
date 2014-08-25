@@ -1,33 +1,19 @@
 /* Lear's GIST implementation, version 1.1, (c) INRIA 2009, Licence: PSFL */
 
+#include <iostream>
+#include <iomanip>
 #include <vector>
 #include <opencv2/opencv.hpp>
-
-#include "libgist.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "standalone_image.h"
+#include "gist.h"
+
 using namespace std;
 using namespace cv;
-
-static color_image_t *load_ppm(const char *fname)
-{
-    Mat src = imread(fname);
-
-    src.convertTo(src, CV_32F);
-    vector<Mat> bgr;
-    split(src, bgr);
-
-    color_image_t *img = color_image_new(src.cols, src.rows);
-    memcpy(img->c1, bgr[2].data, src.cols * src.rows * sizeof(float));
-    memcpy(img->c2, bgr[1].data, src.cols * src.rows * sizeof(float));
-    memcpy(img->c3, bgr[0].data, src.cols * src.rows * sizeof(float));
-
-    return img;
-}
-
 
 static void usage(void)
 {
@@ -36,7 +22,7 @@ static void usage(void)
             "options:\n"
             "[-nblocks nb] use a grid of nb*nb cells (default 4)\n"
             "[-orientationsPerScale o_1,..,o_n] use n scales and compute o_i orientations for scale i\n"
-            );
+           );
 
     exit(1);
 }
@@ -73,28 +59,17 @@ int main(int argc, char* args[])
         }
     }
 
-    color_image_t *im = load_ppm(infilename);
+    Mat src = imread(infilename);
 
-    float *desc = color_gist_scaletab(im, nblocks, n_scale, orientations_per_scale);
+    clany::Gist gist;
 
-    int i;
+    vector<float> result;
+    gist.extract(src, result, nblocks, n_scale, orientations_per_scale);
 
-    int descsize = 0;
-    // compute descriptor size
-    for (i = 0; i < n_scale; i++)
-        descsize += nblocks*nblocks*orientations_per_scale[i];
-
-    descsize *= 3; // color
-
-    // print descriptor
-    for (i = 0; i < descsize; i++)
-        printf("%.4f ", desc[i]);
-
-    printf("\n");
-
-    free(desc);
-
-    color_image_delete(im);
+    for (const auto & val : result) {
+        cout << fixed << setprecision(4) << val << " ";
+    }
+    cout << endl;
 
     return 0;
 }
