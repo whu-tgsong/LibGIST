@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace clany;
 
 static void usage(void)
 {
@@ -61,10 +62,8 @@ int main(int argc, char* args[])
 
     Mat src = imread(infilename);
 
-    clany::Gist gist;
-
     vector<float> result;
-    gist.extract(src, result, nblocks, n_scale, orientations_per_scale);
+    Gist::extract(src, result, nblocks, n_scale, orientations_per_scale);
 
     for (const auto & val : result) {
         cout << fixed << setprecision(4) << val << " ";

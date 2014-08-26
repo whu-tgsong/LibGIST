@@ -5,7 +5,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "-DUSE_GIST -DSTANDALONE_GIST")
 else()
   # -Wall -g -o $@ $^ $(WFFTLIB) -lfftw3f -lm
-  set(CMAKE_CXX_FLAGS "-std=c++1y -fno-operator-names -Wall -lm -DUSE_GIST -DSTANDALONE_GIST")
+  set(CMAKE_CXX_FLAGS "-std=c++14 -fno-operator-names -Wall -lm -DUSE_GIST -DSTANDALONE_GIST")
 endif()
 
 set(DEFAULT_LIB_PATH $ENV{DEV_LIBS})
