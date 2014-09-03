@@ -1,32 +1,43 @@
 #ifndef GIST_H
 #define GIST_H
 
-#include <array>
-#include <vector>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 #include "clany/clany_macros.h"
 #include "libgist.h"
 
 _CLANY_BEGIN
-class Gist {
+struct GISTParams {
+    int width;
+    int height;
+    int blocks;
+    int scale;
+    vector<int> orients;
+};
+
+class GIST {
 public:
-    Gist(const cv::Mat& src) : img(src) {}
+#if __cplusplus >= 201103L
+    GIST() = default;
+#endif
+    GIST(const GISTParams& gist_params) : params(gist_params) {}
 
-    void extract(vector<float>& result, int n_blocks, int n_scale, vector<int> n_orientations) const {
-        extract(img, result, n_blocks, n_scale, n_orientations.data());
+    void setParams(const GISTParams& gist_params) {
+        params = gist_params;
     }
 
-    void extract(vector<float>& result, int n_blocks, int n_scale,
-                 const int* n_orientations) const {
-        extract(img, result, n_blocks, n_scale, n_orientations);
+    void extract(const cv::Mat& src, vector<float>& result) const {
+        extract(src, result, params.blocks, params.scale, params.orients.data());
     }
 
-    static
     void extract(const cv::Mat& src, vector<float>& result,
-                 int n_blocks, int n_scale, const int* n_orientations);
+                 int n_blocks, int n_scale, const int* n_orientations) const;
 
 private:
-    cv::Mat img;
+#if __cplusplus >= 201103L
+    GISTParams params {256, 256, 4, 3, {8, 8, 4}};
+#else
+    GISTParams params;
+#endif
 };
 _CLANY_END
 

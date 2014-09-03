@@ -1,72 +1,68 @@
-#include <iostream>
 #include <memory>
-#include <opencv2/opencv.hpp>
 #include "gist.h"
-#include "clany/timer.hpp"
 
 using namespace std;
 using namespace cv;
 using namespace clany;
 
 namespace {
-class GistImage {
+using DescPtr     = unique_ptr<float, void(*)(void*)>;
+using ColorImgPtr = unique_ptr<color_image_t, void(*)(color_image_t*)>;
+using GrayImgPtr  = unique_ptr<image_t, void(*)(image_t*)>;
+
+class GISTImage {
 public:
-    GistImage(const cv::Mat& src) {
+    GISTImage(const cv::Mat& src) {
         cv::Mat src_f;
         src.convertTo(src_f, CV_32F);
 
-        if (src.channels() == 3) {
+        if (src.channels() == 1) {
+            gray_img.reset(image_new(src.cols, src.rows));
+            memcpy(gray_img->data, src_f.data, src.cols * src.rows * sizeof(float));
+        } else {
             vector<cv::Mat> bgr;
             cv::split(src_f, bgr);
 
-            color_img = color_image_new(src.cols, src.rows);
+            color_img.reset(color_image_new(src.cols, src.rows));
             memcpy(color_img->c1, bgr[2].data, src.cols * src.rows * sizeof(float));
             memcpy(color_img->c2, bgr[1].data, src.cols * src.rows * sizeof(float));
             memcpy(color_img->c3, bgr[0].data, src.cols * src.rows * sizeof(float));
         }
-
-        if (src.channels() == 1) {
-            gray_img = image_new(src.cols, src.rows);
-            memcpy(gray_img->data, src_f.data, src.cols * src.rows * sizeof(float));
-        }
-    }
-
-    ~GistImage() {
-        if (color_img) color_image_delete(color_img);
-        if (gray_img) image_delete(gray_img);
     }
 
     operator color_image_t* () {
-        return color_img;
+        return color_img.get();
     }
 
     operator image_t* () {
-        return gray_img;
+        return gray_img.get();
     }
 
 private:
-    color_image_t *color_img = nullptr;
-    image_t* gray_img = nullptr;
+    ColorImgPtr color_img {nullptr, &color_image_delete};
+    GrayImgPtr  gray_img  {nullptr, &image_delete};
 };
+} // Unnamed namespace
 
-using GistDesc = unique_ptr<float, void(*)(void*)>;
-}   // Unamed namespace
 
-void Gist::extract(const Mat& src, vector<float>& result,
-                   int nblocks, int n_scale, const int* n_orientations)
+//////////////////////////////////////////////////////////////////////////
+void GIST::extract(const Mat& src, vector<float>& result,
+                   int nblocks, int n_scale, const int* n_orientations) const
 {
-    assert(!src.empty());
-    assert(src.channels() == 3 || src.channels() == 1);
+    assert(!src.empty() && src.channels() == 1 || src.channels() == 3);
 
-    GistImage img(src);
+    // Scale and crop image
+
+
+    GISTImage img(src);
 
     // Compute gist descriptor
-    GistDesc desc(nullptr, &free);
+    DescPtr desc(nullptr, &free);
 
-    if (src.channels() == 3) {
-        desc.reset(color_gist_scaletab(img, nblocks, n_scale, n_orientations));
-    } else {
+    if (src.channels() == 1) {
         desc.reset(bw_gist_scaletab(img, nblocks, n_scale, n_orientations));
+    } else {
+        desc.reset(color_gist_scaletab(img, nblocks, n_scale, n_orientations));
     }
 
     // Compute descriptor size
