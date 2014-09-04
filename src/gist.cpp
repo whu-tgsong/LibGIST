@@ -1,4 +1,6 @@
+#include <numeric>
 #include <memory>
+#include <opencv2/imgproc/imgproc.hpp>
 #include "gist.h"
 
 using namespace std;
@@ -13,15 +15,12 @@ using GrayImgPtr  = unique_ptr<image_t, void(*)(image_t*)>;
 class GISTImage {
 public:
     GISTImage(const cv::Mat& src) {
-        cv::Mat src_f;
-        src.convertTo(src_f, CV_32F);
-
         if (src.channels() == 1) {
             gray_img.reset(image_new(src.cols, src.rows));
-            memcpy(gray_img->data, src_f.data, src.cols * src.rows * sizeof(float));
+            memcpy(gray_img->data, src.data, src.cols * src.rows * sizeof(float));
         } else {
             vector<cv::Mat> bgr;
-            cv::split(src_f, bgr);
+            cv::split(src, bgr);
 
             color_img.reset(color_image_new(src.cols, src.rows));
             memcpy(color_img->c1, bgr[2].data, src.cols * src.rows * sizeof(float));
@@ -46,33 +45,56 @@ private:
 
 
 //////////////////////////////////////////////////////////////////////////
-void GIST::extract(const Mat& src, vector<float>& result,
-                   int nblocks, int n_scale, const int* n_orientations) const
+void GIST::setParams(const GISTParams& gist_params) {
+    params = gist_params;
+
+    desc_size = accumulate(params.orients.begin(), params.orients.end(), 0,
+                           [&gist_params](int init, int orient) {
+        return init + gist_params.blocks * gist_params.blocks * orient;
+    });
+    desc_size *= params.use_color ? 3 : 1;
+}
+
+void GIST::extract(const Mat& _src, vector<float>& result) const
 {
-    assert(!src.empty() && src.channels() == 1 || src.channels() == 3);
+    assert(!_src.empty());
 
-    // Scale and crop image
+    cv::Mat src;
+    _src.convertTo(src, CV_32F);
 
+    double h = params.height;
+    double w = params.width;
+    double h_ratio = h / src.rows;
+    double w_ratio = w / src.cols;
 
-    GISTImage img(src);
+    Mat cropped(src);
+    if (h_ratio < w_ratio) {
+        // Resize to same width
+        resize(src, src, Size(), w_ratio, w_ratio, INTER_LANCZOS4);
+        // Crop to get same size
+        cropped = src(Rect(0, (src.rows - h) / 2, w, h));
+    }
+    if (w_ratio < h_ratio) {
+        // Resize to same height
+        resize(src, src, Size(), h_ratio, h_ratio, INTER_LANCZOS4);
+        // Crop to get same size
+        cropped = src(Rect((src.cols - w) / 2, 0, w, h));
+    }
 
     // Compute gist descriptor
     DescPtr desc(nullptr, &free);
 
-    if (src.channels() == 1) {
-        desc.reset(bw_gist_scaletab(img, nblocks, n_scale, n_orientations));
+    if (params.use_color) {
+        assert(src.channels() == 3);
+        desc.reset(color_gist_scaletab(GISTImage(cropped),
+                   params.blocks, params.scale, params.orients.data()));
     } else {
-        desc.reset(color_gist_scaletab(img, nblocks, n_scale, n_orientations));
+        cvtColor(cropped, cropped, CV_BGR2GRAY);
+        desc.reset(bw_gist_scaletab(GISTImage(cropped),
+                   params.blocks, params.scale, params.orients.data()));
     }
-
-    // Compute descriptor size
-    int descsize = 0;
-    for (int i = 0; i < n_scale; i++) {
-        descsize += nblocks * nblocks * n_orientations[i];
-    }
-    descsize *= src.channels();
 
     // Copy to result
-    result.resize(descsize);
-    memcpy(result.data(), desc.get(), sizeof(float) * descsize);
+    result.resize(desc_size);
+    memcpy(result.data(), desc.get(), sizeof(float) * desc_size);
 }

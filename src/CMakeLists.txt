@@ -5,9 +5,9 @@ set(SRC_LIST
   main.cpp  
 )
 set(HEADER_LIST
-  ${INCLUDE_DIR}/gist.h
-  ${INCLUDE_DIR}/libgist.h
-  ${INCLUDE_DIR}/standalone_image.h
+  ${PROJ_INCLUDE_DIR}/gist.h
+  ${PROJ_INCLUDE_DIR}/libgist.h
+  ${PROJ_INCLUDE_DIR}/standalone_image.h
 )
 
 add_executable(LibGIST ${SRC_LIST} ${HEADER_LIST})

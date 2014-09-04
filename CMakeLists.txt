@@ -22,8 +22,8 @@ include_directories(${FFTW_INCLUDES})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-include_directories(${INCLUDE_DIR})
+set(PROJ_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJ_INCLUDE_DIR})
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 

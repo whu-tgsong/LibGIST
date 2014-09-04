@@ -9,13 +9,12 @@ using namespace std;
 using namespace cv;
 using namespace clany;
 
-const GISTParams DEFAULT_PARAMS {256, 256, 4, 3, {8, 8, 4}};
+const GISTParams DEFAULT_PARAMS {true, 32, 32, 4, 3, {8, 8, 4}};
 
 
-int main(int argc, char* args[])
+int main(int argc, char* argv[])
 {
-    string file_name;
-    Mat src = imread(file_name);
+    Mat src = imread(argv[1]);
     if (src.empty()) {
         cerr << "No input image!" << endl;
         exit(1);
