@@ -58,9 +58,7 @@ void GIST::setParams(const GISTParams& gist_params) {
 void GIST::extract(const Mat& _src, vector<float>& result) const
 {
     assert(!_src.empty());
-
-    cv::Mat src;
-    _src.convertTo(src, CV_32F);
+    cv::Mat src(_src.clone());
 
     double h = params.height;
     double w = params.width;
@@ -82,10 +80,11 @@ void GIST::extract(const Mat& _src, vector<float>& result) const
     }
 
     // Compute gist descriptor
+    cropped.convertTo(cropped, CV_32F);
     DescPtr desc(nullptr, &free);
 
     if (params.use_color) {
-        assert(src.channels() == 3);
+        assert(cropped.channels() == 3);
         desc.reset(color_gist_scaletab(GISTImage(cropped),
                    params.blocks, params.scale, params.orients.data()));
     } else {
