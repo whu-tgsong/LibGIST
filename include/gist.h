@@ -2,7 +2,7 @@
 #define GIST_H
 
 #include <opencv2/core/core.hpp>
-#include "clany/clany_macros.h"
+#include "clany/clany_defs.h"
 #include "libgist.h"
 
 _CLANY_BEGIN
