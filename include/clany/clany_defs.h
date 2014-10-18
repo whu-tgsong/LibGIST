@@ -25,7 +25,7 @@
 #ifndef CLANY_MACROS_H
 #define CLANY_MACROS_H
 
-#define _CLANY_BEGIN	namespace clany {
+#define _CLANY_BEGIN	namespace cls {
 #define _CLANY_END		}
 
 #if defined CLANYAPI_EXPORTS
@@ -42,7 +42,9 @@
 #undef TRACE
 
 #ifdef _MSC_VER
-#  include <crtdbg.h>
+#  define NOMINMAX
+#  define _WINSOCKAPI_
+#  include <windows.h>
 #  define ASSERT _ASSERTE
 #else
 #  include <cassert>
@@ -59,20 +61,17 @@
           << msg << std::endl
 #  define _TRACE(format, ...) \
      char buffer[256]; \
-     sprintf(buffer, (format), __VA_ARGS__); \
+     sprintf(buffer, (format), ##__VA_ARGS__); \
      stringstream ss; \
      ss << "Debug: " << __FILE__ << "(" << __LINE__ << "): " << buffer << endl
 #  ifdef _MSC_VER
-#    define NOMINMAX
-#    define _WINSOCKAPI_
-#    include <windows.h>
 #    define TRACE(format, ...) { \
-       _TRACE((format), __VA_ARGS__); \
+       _TRACE((format), ##__VA_ARGS__); \
        OutputDebugString(ss.str().c_str()); \
      }
 #  else
 #    define TRACE(format, ...) { \
-       _TRACE((format), __VA_ARGS__); \
+       _TRACE((format), ##__VA_ARGS__); \
        cout << ss.str(); \
      }
 #  endif
@@ -80,22 +79,34 @@
 #  define VERIFY(expression) (expression)
 #  define DBGVAR(os, var) ((void)0)
 #  define DBGMSG(os, msg) ((void)0)
-#  define TRACE(expression) ((void)0)
+#  define TRACE(...) ((void)0)
 #endif
 
+#  undef NOEXCEPT
+#  undef CONSTEXPR
 #if !(__cplusplus >= 201103L)
-#  undef noexcept
-#  undef constexpr
-#  define noexcept throw()
-#  define constexpr const
+#  define NOEXCEPT throw()
+#  define CONSTEXPR const
+#else
+#  define NOEXCEPT noexcept
+#  define CONSTEXPR constexpr
 #endif
 
+// Some useful typedef
 using ushort = unsigned short;
 using uchar  = unsigned char;
 using uint   = unsigned int;
 using ulong  = unsigned long;
 using ullong = unsigned long long;
 using llong  = long long;
+
+// Define GCC and Clang Version
+#define GCC_VERSION (__GNUC__ * 100 +\
+                     __GNUC_MINOR__)
+#define CLANG_VERSION (__clang_major__ * 100 +\
+                       __clang_minor__)
+#define CPP11_SUPPORT (GCC_VERSION >= 408 || CLANG_VERSION >= 303 || _MSC_VER >= 1900)
+#define CPP14_SUPPORT (GCC_VERSION >= 409 || CLANG_VERSION >= 304)
 
 _CLANY_BEGIN
 using namespace std;

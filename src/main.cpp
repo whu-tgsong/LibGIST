@@ -7,7 +7,7 @@
 
 using namespace std;
 using namespace cv;
-using namespace clany;
+using namespace cls;
 
 const GISTParams DEFAULT_PARAMS {true, 32, 32, 4, 3, {8, 8, 4}};
 
